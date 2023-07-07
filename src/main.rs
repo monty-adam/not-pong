@@ -53,6 +53,7 @@ fn main() {
         draw_player_paddle(&mut screen, player_location);
 
         let mut ball_location = 5;
+        let mut move_right = true;
 
         for c in stdin.keys() {
             screen.flush().unwrap();
@@ -76,7 +77,17 @@ fn main() {
                 _ => player_location,
             };
 
-            ball_location = cmp::min(ball_location + 1, term_width - 2);
+            if ball_location == 5 {
+                move_right = true;
+            } else if ball_location == term_width - 2 {
+                move_right = false;
+            };
+
+            ball_location = if move_right {
+                cmp::min(ball_location + 1, term_width - 2)
+            } else {
+                cmp::max(ball_location - 1, 5)
+            };
         }
     }
 }
