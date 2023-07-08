@@ -79,7 +79,7 @@ impl Ball {
     }
 
     fn _graduate_bounce(&self, y_coordinate: u16) -> u16 {
-        if self.x_coordinate % 10 == 0 {
+        if self.x_coordinate % 8 == 0 {
             y_coordinate
         } else {
             self.y_coordinate
@@ -199,13 +199,9 @@ fn main() {
             // This handles frame skipping
             if player.is_touching(&ball) && (ball.x_coordinate == player.x_coordinate) {
                 player.catch_ball(ball.y_coordinate)
-            }
-
-            // handicaps rival by mimicing player after it's serve
-            match ball.direction {
-                BallDirection::FromPlayer => rival.catch_ball(ball.y_coordinate),
-                BallDirection::ToPlayer => rival.catch_ball(player.y_coordinate),
             };
+
+            rival.catch_ball(ball.y_coordinate);
         }
     }
 }
