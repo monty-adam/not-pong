@@ -79,7 +79,7 @@ impl Ball {
     }
 
     fn _graduate_bounce(&self, y_coordinate: u16) -> u16 {
-        if self.x_coordinate % 4 == 0 {
+        if self.x_coordinate % 10 == 0 {
             y_coordinate
         } else {
             self.y_coordinate
