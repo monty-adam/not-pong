@@ -2,6 +2,7 @@ extern crate termion;
 
 use std::{
     cmp,
+    collections::HashSet,
     io::{self, Write},
     time::{Duration, Instant},
 };
@@ -9,7 +10,7 @@ use termion::{
     event::Key,
     input::TermRead,
     raw::IntoRawMode,
-    screen::{IntoAlternateScreen, ToAlternateScreen, ToMainScreen},
+    screen::IntoAlternateScreen,
 };
 
 fn draw_paddle<W: Write>(screen: &mut W, paddle: &Paddle) {
@@ -53,13 +54,21 @@ impl Ball {
     }
 
     fn check_collision(&mut self, paddle: &Paddle) {
-        if self.y_coordinate == paddle.y_coordinate {
+        let is_touching = self
+            .get_hitbox()
+            .is_disjoint(&paddle.get_hitbox());
+
+        if is_touching {
             if self.x_coordinate == paddle.x_coordinate + 1 {
                 self.direction = BallDirection::FromPlayer;
             } else if self.x_coordinate == paddle.x_coordinate - 2 {
                 self.direction = BallDirection::ToPlayer;
             };
         };
+    }
+
+    fn get_hitbox(&self) -> HashSet<u16> {
+        HashSet::from([self.x_coordinate, self.x_coordinate + 1])
     }
 }
 
@@ -81,6 +90,10 @@ impl Paddle {
             x_coordinate,
             y_coordinate,
         } 
+    }
+
+    fn get_hitbox(&self) -> HashSet<u16> {
+        HashSet::from([self.y_coordinate, self.y_coordinate + 1, self.y_coordinate + 2])
     }
 }
 
