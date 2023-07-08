@@ -10,7 +10,7 @@ use std::{
 };
 use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::IntoAlternateScreen};
 
-const DIFICULTY: u16 = 8;  // Easy 10; Medium 8;
+const DIFICULTY: u16 = 12;  // Easy 10; Medium 8; Hard 12
 
 fn draw_paddle<W: Write>(screen: &mut W, paddle: &Paddle) {
     write!(
