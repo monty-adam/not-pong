@@ -10,6 +10,8 @@ use std::{
 };
 use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::IntoAlternateScreen};
 
+const DIFICULTY: u16 = 8;  // Easy 10; Medium 8;
+
 fn draw_paddle<W: Write>(screen: &mut W, paddle: &Paddle) {
     write!(
         screen,
@@ -59,7 +61,7 @@ impl Ball {
     }
 
     fn _bounce(&self) -> BallBounce {
-        match thread_rng().gen_range(0..=4) {
+        match thread_rng().gen_range(0..=3) {
             0 => BallBounce::Up,
             1 => BallBounce::Down,
             _ => BallBounce::Forward,
@@ -201,7 +203,11 @@ fn main() {
                 player.catch_ball(ball.y_coordinate)
             };
 
-            rival.catch_ball(ball.y_coordinate);
+            if rival.y_coordinate % DIFICULTY == 0 {
+                continue;
+            } else {
+                rival.catch_ball(ball.y_coordinate);
+            };
         }
     }
 }
