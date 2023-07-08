@@ -67,9 +67,7 @@ impl Ball {
     }
 
     fn check_collision(&mut self, paddle: &Paddle) {
-        let is_touching = self.get_hitbox().is_disjoint(&paddle.get_hitbox());
-
-        if is_touching {
+        if paddle.is_touching(self) {
             if self.x_coordinate == paddle.x_coordinate + 1 {
                 self.direction = BallDirection::FromPlayer;
                 self.bounce = self._bounce();
@@ -102,7 +100,7 @@ impl Ball {
     }
 
     fn get_hitbox(&self) -> HashSet<u16> {
-        HashSet::from([self.x_coordinate, self.x_coordinate + 1])
+        HashSet::from([self.y_coordinate + 1, self.y_coordinate + 1])
     }
 }
 
@@ -133,6 +131,14 @@ impl Paddle {
             self.y_coordinate + 2,
         ])
     }
+
+    fn catch_ball(&mut self, y_coordinate: u16) {
+        self.y_coordinate = y_coordinate;
+    }
+
+    fn is_touching(&self, ball: &Ball) -> bool {
+        !self.get_hitbox().is_disjoint(&ball.get_hitbox())
+    }
 }
 
 fn main() {
@@ -153,11 +159,8 @@ fn main() {
         write!(screen, "{}{}", termion::clear::All, termion::cursor::Hide,).unwrap();
 
         // Starting variables
-        // let mut player_location = 1;
-        // let mut ball_location = 5;
-        // let mut move_right = true;
         let mut player = Paddle::new_player(1);
-        let rival = Paddle::new_rival(term_width, 1);
+        let mut rival = Paddle::new_rival(term_width, 1);
         let mut ball = Ball::new(5, 1);
 
         // Init game
@@ -181,8 +184,10 @@ fn main() {
                 draw_ball(&mut screen, &ball);
                 screen.flush().unwrap();
             }
-
             // Game logic...
+            ball.check_collision(&rival);
+            ball.check_collision(&player);
+
             if let Some(c) = keys_pressed.next() {
                 player.y_coordinate = match c.unwrap() {
                     Key::Char('q') => break,
@@ -191,9 +196,16 @@ fn main() {
                     Key::Null | _ => player.y_coordinate,
                 };
             };
+            // This handles frame skipping
+            if player.is_touching(&ball) && (ball.x_coordinate == player.x_coordinate) {
+                player.catch_ball(ball.y_coordinate)
+            }
 
-            ball.check_collision(&rival);
-            ball.check_collision(&player);
+            // handicaps rival by mimicing player after it's serve
+            match ball.direction {
+                BallDirection::FromPlayer => rival.catch_ball(ball.y_coordinate),
+                BallDirection::ToPlayer => rival.catch_ball(player.y_coordinate),
+            };
         }
     }
 }
