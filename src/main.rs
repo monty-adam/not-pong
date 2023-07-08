@@ -1,17 +1,14 @@
+extern crate rand;
 extern crate termion;
 
+use rand::{thread_rng, Rng};
 use std::{
     cmp,
     collections::HashSet,
     io::{self, Write},
     time::{Duration, Instant},
 };
-use termion::{
-    event::Key,
-    input::TermRead,
-    raw::IntoRawMode,
-    screen::IntoAlternateScreen,
-};
+use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::IntoAlternateScreen};
 
 fn draw_paddle<W: Write>(screen: &mut W, paddle: &Paddle) {
     write!(
@@ -38,10 +35,17 @@ enum BallDirection {
     ToPlayer,
     FromPlayer,
 }
+
+enum BallBounce {
+    Up,
+    Down,
+    Forward,
+}
 struct Ball {
     x_coordinate: u16,
     y_coordinate: u16,
     direction: BallDirection,
+    bounce: BallBounce,
 }
 
 impl Ball {
@@ -50,20 +54,50 @@ impl Ball {
             x_coordinate,
             y_coordinate,
             direction: BallDirection::FromPlayer,
+            bounce: BallBounce::Forward,
+        }
+    }
+
+    fn _bounce(&self) -> BallBounce {
+        match thread_rng().gen_range(0..=4) {
+            0 => BallBounce::Up,
+            1 => BallBounce::Down,
+            _ => BallBounce::Forward,
         }
     }
 
     fn check_collision(&mut self, paddle: &Paddle) {
-        let is_touching = self
-            .get_hitbox()
-            .is_disjoint(&paddle.get_hitbox());
+        let is_touching = self.get_hitbox().is_disjoint(&paddle.get_hitbox());
 
         if is_touching {
             if self.x_coordinate == paddle.x_coordinate + 1 {
                 self.direction = BallDirection::FromPlayer;
+                self.bounce = self._bounce();
             } else if self.x_coordinate == paddle.x_coordinate - 2 {
                 self.direction = BallDirection::ToPlayer;
+                self.bounce = self._bounce();
             };
+        };
+    }
+
+    fn _graduate_bounce(&self, y_coordinate: u16) -> u16 {
+        if self.x_coordinate % 4 == 0 {
+            y_coordinate
+        } else {
+            self.y_coordinate
+        }
+    }
+
+    fn move_towards(&mut self, max_x: u16, max_y: u16) {
+        self.x_coordinate = match self.direction {
+            BallDirection::FromPlayer => cmp::min(self.x_coordinate + 1, max_x),
+            BallDirection::ToPlayer => cmp::max(self.x_coordinate - 1, 1),
+        };
+
+        self.y_coordinate = match self.bounce {
+            BallBounce::Up => self._graduate_bounce(cmp::max(self.y_coordinate - 1, 1)),
+            BallBounce::Down => self._graduate_bounce(cmp::min(self.y_coordinate + 1, max_y)),
+            BallBounce::Forward => self.y_coordinate,
         };
     }
 
@@ -89,11 +123,15 @@ impl Paddle {
         Self {
             x_coordinate,
             y_coordinate,
-        } 
+        }
     }
 
     fn get_hitbox(&self) -> HashSet<u16> {
-        HashSet::from([self.y_coordinate, self.y_coordinate + 1, self.y_coordinate + 2])
+        HashSet::from([
+            self.y_coordinate,
+            self.y_coordinate + 1,
+            self.y_coordinate + 2,
+        ])
     }
 }
 
@@ -130,14 +168,12 @@ fn main() {
         screen.flush().unwrap();
 
         loop {
+            // Animation frames...
             let duration = start.elapsed();
             if duration >= Duration::from_millis(33) {
                 start = Instant::now();
 
-                ball.x_coordinate = match ball.direction {
-                    BallDirection::FromPlayer => cmp::min(ball.x_coordinate + 1, term_width),
-                    BallDirection::ToPlayer => cmp::max(ball.x_coordinate - 1, term_width / term_width),
-                };
+                ball.move_towards(term_width, term_height);
 
                 write!(screen, "{}", termion::clear::All).unwrap();
                 draw_paddle(&mut screen, &player);
@@ -146,6 +182,7 @@ fn main() {
                 screen.flush().unwrap();
             }
 
+            // Game logic...
             ball.check_collision(&player);
             ball.check_collision(&rival);
 
