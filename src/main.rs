@@ -89,15 +89,15 @@ impl Ball {
     }
 
     fn move_towards(&mut self, max_x: u16, max_y: u16) {
-        self.x_coordinate = match self.direction {
-            BallDirection::FromPlayer => cmp::min(self.x_coordinate + 1, max_x),
-            BallDirection::ToPlayer => cmp::max(self.x_coordinate - 1, 1),
-        };
-
         self.y_coordinate = match self.bounce {
             BallBounce::Up => self._graduate_bounce(cmp::max(self.y_coordinate - 1, 1)),
             BallBounce::Down => self._graduate_bounce(cmp::min(self.y_coordinate + 1, max_y)),
             BallBounce::Forward => self.y_coordinate,
+        };
+
+        self.x_coordinate = match self.direction {
+            BallDirection::FromPlayer => cmp::min(self.x_coordinate + 1, max_x),
+            BallDirection::ToPlayer => cmp::max(self.x_coordinate - 1, 1),
         };
     }
 
@@ -183,9 +183,6 @@ fn main() {
             }
 
             // Game logic...
-            ball.check_collision(&player);
-            ball.check_collision(&rival);
-
             if let Some(c) = keys_pressed.next() {
                 player.y_coordinate = match c.unwrap() {
                     Key::Char('q') => break,
@@ -194,6 +191,9 @@ fn main() {
                     Key::Null | _ => player.y_coordinate,
                 };
             };
+
+            ball.check_collision(&rival);
+            ball.check_collision(&player);
         }
     }
 }
